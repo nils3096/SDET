@@ -1,0 +1,24 @@
+## Velocity Context Diagnostic
+Tool object exists: #if($tool)YES#{else}NO#end
+#if($tool)
+Tool class: $tool.class.name
+Tool methods: $tool.class.methods
+#end
+
+## Alternative JSON methods to try:
+1. Direct object: $tc.saved.extendedParameters
+2. toString(): $tc.saved.extendedParameters.toString()
+3. JSON class: #if($JSON)$JSON.stringify($tc.saved.extendedParameters)#{else}JSON not available#end
+4. Jackson: #if($jackson)$jackson.writeValueAsString($tc.saved.extendedParameters)#{else}Jackson not available#end
+
+## Available context variables:
+#foreach($key in $tc.saved.keySet())
+Key: $key = $tc.saved.get($key)
+#end
+
+## Service Qualification Item structure:
+#if($tc.saved.serviceQualificationItem)
+Count: $tc.saved.serviceQualificationItem.size()
+First item class: $tc.saved.serviceQualificationItem.get(0).class.name
+First item: $tc.saved.serviceQualificationItem.get(0)
+#end

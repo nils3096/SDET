@@ -1,0 +1,81 @@
+#* Generate Random IDs *#
+#set($chars = "abcdefghijklmnopqrstuvwxyz")
+#set($randomString = "")
+#foreach( $i in [1..4] )
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($tc.randomAlphaId1 = $randomString)
+
+#set($randomString = "")
+#foreach( $i in [1..4] )
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($tc.randomAlphaId2 = $randomString)
+
+#set($tc.randomCCMSFCId = $tc.randomAlphaId1 + $math.random(1000, 9999) + $tc.randomAlphaId2)
+#set($tc.randomCCMSSERVICEId = $math.random(1000, 9999) + $tc.randomAlphaId2 + $tc.randomAlphaId1)
+
+#* Validate required fields *#
+#set($missingFields = [])
+#if(!$tc.saved.externalId || $tc.saved.externalId.trim() == "") #set($void = $missingFields.add("externalId")) #end
+#if(!$tc.saved.relatedPartyId || $tc.saved.relatedPartyId.trim() == "") #set($void = $missingFields.add("relatedPartyId")) #end
+#if(!$tc.saved.extendedParameters) #set($void = $missingFields.add("extendedParameters")) #end
+#if(!$tc.saved.serviceQualificationItem) #set($void = $missingFields.add("serviceQualificationItem")) #end
+
+#if($missingFields.size() > 0)
+  #set($tc.responseCode = 400)
+  {
+    "id": "$tc.randomCCMSFCId",
+    "href": "https://api.example.com/serviceQualificationManagement/v4/checkServiceQualification/$tc.randomCCMSFCId",
+    "state": "terminatedWithError",
+    "terminationError": {
+      "code": "400",
+      "reason": "Incomplete information provided",
+      "message": "Unable to proceed with service qualification due to missing mandatory field(s): $missingFields.toString()"
+    },
+    "effectiveQualificationDate": "2026-05-31T00:00:00Z",
+    "serviceQualificationItem": [],
+    "@type": "CheckServiceQualification"
+  }
+#else
+#set($tc.responseCode = 200)
+
+## Build JSON response directly
+{
+  "id": "fnvk4386rvej",
+  "href": "http://localhost:7070/checkServiceQualification/v4/65729a52ab7fb51cf5fdea45",
+#if($tc.saved.expectedQualificationDate)
+  "checkServiceQualificationDate": "$tc.saved.expectedQualificationDate",
+#end
+  "expirationDate": "2027-05-31T00:00:00Z",
+  "qualificationResult": "Feasible",
+#if($tc.saved.description)
+  "description": "$tc.saved.description",
+#end
+#if($tc.saved.expectedQualificationDate)
+  "expectedQualificationDate": "$tc.saved.expectedQualificationDate",
+#end
+  "externalId": "$tc.saved.externalId",
+  "relatedParty": [
+    {
+      "id": "$tc.saved.relatedPartyId",
+      "href": "http://serverlocation:port/partyManagement/v4/party/$tc.saved.relatedPartyId",
+      "role": "Customer",
+      "@type": "RelatedParty",
+      "@referredType": "Customer"
+    }
+  ],
+  "extendedParameters": $tc.saved.extendedParameters,
+  "serviceQualificationItem": [$tc.saved.serviceQualificationItem],
+  "@type": "CheckServiceQualification"
+}
+
+## Store the response for later use (reconstruct as string if needed)
+#set($tc.saved.serviceQualificationRequest = "JSON response stored")
+#end

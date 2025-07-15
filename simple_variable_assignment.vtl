@@ -1,0 +1,76 @@
+## Simple approach: Direct variable assignment for your JSON response
+#set($serviceQualificationRequest = "{
+    \"id\": \"$tc.randomCCMSFCId\",
+    \"href\": \"http://localhost:7070/checkServiceQualification/v4/$tc.randomCCMSFCId\",
+    \"expirationDate\": \"2027-05-31T00:00:00Z\",
+    \"qualificationResult\": \"Feasible\",
+    \"externalId\": \"$tc.saved.externalId\",
+    \"relatedParty\": [
+      {
+        \"id\": \"$tc.saved.relatedPartyId\",
+        \"href\": \"http://serverlocation:port/partyManagement/v4/party/$tc.saved.relatedPartyId\",
+        \"role\": \"Customer\",
+        \"@type\": \"RelatedParty\",
+        \"@referredType\": \"Customer\"
+      }
+    ],
+    \"extendedParameters\": #if($tc.saved.extendedParameters.size() > 0 && $tc.saved.extendedParameters.get(0).startsWith("{"))$tc.saved.extendedParameters.get(0)#{else}\"$tc.saved.extendedParameters\"#end,
+    \"serviceQualificationItem\": [
+      #foreach($item in $tc.saved.serviceQualificationItem)
+        #set($itemStr = $item.toString())
+        #if($item.keySet && $item.keySet())
+          {
+            \"id\": \"CCMS_SQI_ID_$foreach.index\",
+            \"qualificationResult\": \"Feasible\"
+            #foreach($key in $item.keySet())
+              #set($value = $item.get($key))
+              #if($value && $value.toString().trim() != "")
+                ,\"$key\": #if($value.toString().startsWith("{") || $value.toString().startsWith("["))$value#{else}\"$value\"#end
+              #end
+            #end
+          }
+        #elseif($item.entrySet && $item.entrySet())
+          {
+            \"id\": \"CCMS_SQI_ID_$foreach.index\",
+            \"qualificationResult\": \"Feasible\"
+            #foreach($entry in $item.entrySet())
+              #set($value = $entry.value)
+              #if($value && $value.toString().trim() != "")
+                ,\"$entry.key\": #if($value.toString().startsWith("{") || $value.toString().startsWith("["))$value#{else}\"$value\"#end
+              #end
+            #end
+          }
+        #elseif($itemStr.startsWith("{") && $itemStr.endsWith("}"))
+          #set($itemLength = $itemStr.length())
+          #set($endIndex = $itemLength - 1)
+          #set($originalJson = $itemStr.substring(1, $endIndex))
+          {
+            \"id\": \"CCMS_SQI_ID_$foreach.index\",
+            \"qualificationResult\": \"Feasible\",
+            $originalJson
+          }
+        #elseif($itemStr.contains("="))
+          {
+            \"id\": \"CCMS_SQI_ID_$foreach.index\",
+            \"qualificationResult\": \"Feasible\",
+            \"_originalData\": \"$itemStr\"
+          }
+        #else
+          {
+            \"id\": \"CCMS_SQI_ID_$foreach.index\",
+            \"qualificationResult\": \"Feasible\",
+            \"_debug\": \"Could not parse item: $itemStr\"
+          }
+        #end#if($foreach.hasNext),#end
+      #end
+    ],
+    \"@type\": \"CheckServiceQualification\"
+  }")
+
+## Now you can use $serviceQualificationRequest anywhere in your template
+## For example, to output it:
+$serviceQualificationRequest
+
+## Or to use it in other operations:
+## #set($anotherVariable = $serviceQualificationRequest)
+## #if($serviceQualificationRequest.contains("Feasible"))...#end

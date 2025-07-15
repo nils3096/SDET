@@ -1,0 +1,29 @@
+#* Parse and modify service qualification request *#
+#set($jsonUtils = $utils.json)
+#set($orgJson = $tool.json)
+#set($input = $orgJson.parse($tc.saved.serviceQualificationRequest))
+
+#* Set root ID and qualificationResult *#
+#set($externalId = $input.get("externalId"))
+#set($rootId = "CCMS_SQ_ID_for_Smart VNO Capacity Pool_QI_${externalId}")
+#set($void = $input.put("id", $rootId))
+#set($void = $input.put("qualificationResult", "Feasible"))
+
+#* Get serviceQualificationItem array *#
+#set($items = $input.get("serviceQualificationItem"))
+
+#* Process items if they exist *#
+#if($items)
+    #if($items.size() > 0)
+        #foreach($item in $items)
+            #set($itemExtId = $item.get("externalId"))
+            #if($itemExtId)
+                #set($void = $item.put("id", "CCMS_SQI_ID_for_CA_QI_${itemExtId}"))
+                #set($void = $item.put("qualificationResult", "Feasible"))
+            #end
+        #end
+    #end
+#end
+
+#* Convert modified object back to string *#
+#set($tc.saved.serviceQualificationRequest = $orgJson.stringify($input))

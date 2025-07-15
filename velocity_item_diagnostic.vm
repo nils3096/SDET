@@ -1,0 +1,40 @@
+## ServiceQualificationItem Diagnostic
+#if($tc.saved.serviceQualificationItem && $tc.saved.serviceQualificationItem.size() > 0)
+#set($firstItem = $tc.saved.serviceQualificationItem.get(0))
+
+Item Count: $tc.saved.serviceQualificationItem.size()
+
+First Item Class: $firstItem.class.name
+
+First Item toString(): $firstItem.toString()
+
+## Check if it has entrySet method
+Has entrySet: #if($firstItem.entrySet)YES#{else}NO#end
+
+## Check common properties individually
+Has service: #if($firstItem.service)YES - $firstItem.service#{else}NO#end
+Has quantity: #if($firstItem.quantity)YES - $firstItem.quantity#{else}NO#end
+Has category: #if($firstItem.category)YES - $firstItem.category#{else}NO#end
+
+## Try to see all available methods
+Available methods:
+#foreach($method in $firstItem.class.methods)
+- $method.name
+#end
+
+## Try different ways to access properties
+Try keySet(): #if($firstItem.keySet)$firstItem.keySet()#{else}Not available#end
+Try keys(): #if($firstItem.keys)$firstItem.keys()#{else}Not available#end
+
+## If it's a Map, try different approaches
+#if($firstItem.isEmpty != null)
+Is Map-like: YES
+Map size: $firstItem.size()
+Map keys: #if($firstItem.keySet())$firstItem.keySet()#{else}No keys available#end
+#else
+Is Map-like: NO
+#end
+
+#else
+No serviceQualificationItem found
+#end

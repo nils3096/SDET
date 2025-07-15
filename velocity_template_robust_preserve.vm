@@ -1,0 +1,116 @@
+#set($chars = "abcdefghijklmnopqrstuvwxyz")
+#set($randomString = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($tc.randomAlphaId1 = $randomString)
+#set($randomString = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($tc.randomAlphaId2 = $randomString)
+#set($tc.randomCCMSFCId = $tc.randomAlphaId1 + $math.random(1000, 9999) + $tc.randomAlphaId2)
+
+#set($missingFields = [])
+#if(!$tc.saved.externalId || $tc.saved.externalId.trim() == "") #set($void = $missingFields.add("externalId")) #end
+#if(!$tc.saved.relatedPartyId || $tc.saved.relatedPartyId.trim() == "") #set($void = $missingFields.add("relatedPartyId")) #end
+#if(!$tc.saved.extendedParameters) #set($void = $missingFields.add("extendedParameters")) #end
+#if(!$tc.saved.serviceQualificationItem) #set($void = $missingFields.add("serviceQualificationItem")) #end
+
+#if($missingFields.size() > 0)
+  #set($tc.responseCode = 400)
+  {
+    "id": "$tc.randomCCMSFCId",
+    "href": "https://api.example.com/serviceQualificationManagement/v4/checkServiceQualification/$tc.randomCCMSFCId",
+    "state": "terminatedWithError",
+    "terminationError": {
+      "code": "400",
+      "reason": "Incomplete information provided",
+      "message": "Missing mandatory field(s): $missingFields.toString()"
+    },
+    "effectiveQualificationDate": "2026-05-31T00:00:00Z",
+    "serviceQualificationItem": [],
+    "@type": "CheckServiceQualification"
+  }
+#else
+  #set($tc.responseCode = 200)
+  {
+    "id": "$tc.randomCCMSFCId",
+    "href": "http://localhost:7070/checkServiceQualification/v4/$tc.randomCCMSFCId",
+    "expirationDate": "2027-05-31T00:00:00Z",
+    "qualificationResult": "Feasible",
+    "externalId": "$tc.saved.externalId",
+    "relatedParty": [
+      {
+        "id": "$tc.saved.relatedPartyId",
+        "href": "http://serverlocation:port/partyManagement/v4/party/$tc.saved.relatedPartyId",
+        "role": "Customer",
+        "@type": "RelatedParty",
+        "@referredType": "Customer"
+      }
+    ],
+    "extendedParameters": #if($tc.saved.extendedParameters.size() > 0 && $tc.saved.extendedParameters.get(0).startsWith("{"))$tc.saved.extendedParameters.get(0)#{else}$tc.saved.extendedParameters#end,
+    "serviceQualificationItem": [
+      #foreach($item in $tc.saved.serviceQualificationItem)
+        #set($itemStr = $item.toString())
+        ## Try to create a new map and copy properties
+        #if($item.keySet && $item.keySet())
+          ## Item has Map interface - use keySet
+          {
+            "id": "CCMS_SQI_ID_$foreach.index",
+            "qualificationResult": "Feasible"
+            #foreach($key in $item.keySet())
+              #set($value = $item.get($key))
+              #if($value && $value.toString().trim() != "")
+                ,"$key": #if($value.toString().startsWith("{") || $value.toString().startsWith("["))$value#{else}"$value"#end
+              #end
+            #end
+          }
+        #elseif($item.entrySet && $item.entrySet())
+          ## Item has entrySet - use entrySet
+          {
+            "id": "CCMS_SQI_ID_$foreach.index",
+            "qualificationResult": "Feasible"
+            #foreach($entry in $item.entrySet())
+              #set($value = $entry.value)
+              #if($value && $value.toString().trim() != "")
+                ,"$entry.key": #if($value.toString().startsWith("{") || $value.toString().startsWith("["))$value#{else}"$value"#end
+              #end
+            #end
+          }
+        #elseif($itemStr.contains("="))
+          ## Try to parse toString() output if it contains key=value pairs
+          {
+            "id": "CCMS_SQI_ID_$foreach.index",
+            "qualificationResult": "Feasible",
+            "_originalData": "$itemStr"
+          }
+        #else
+          ## Fallback - try common TMF properties manually
+          {
+            "id": "CCMS_SQI_ID_$foreach.index",
+            "qualificationResult": "Feasible"
+            #if($item.service),"service": $item.service#end
+            #if($item.quantity),"quantity": $item.quantity#end
+            #if($item.expectedActivationDate),"expectedActivationDate": "$item.expectedActivationDate"#end
+            #if($item.place),"place": $item.place#end
+            #if($item.category),"category": "$item.category"#end
+            #if($item.serviceSpecification),"serviceSpecification": $item.serviceSpecification#end
+            #if($item.serviceCharacteristic),"serviceCharacteristic": $item.serviceCharacteristic#end
+            #if($item.serviceRelationship),"serviceRelationship": $item.serviceRelationship#end
+            #if($item.relatedContactInformation),"relatedContactInformation": $item.relatedContactInformation#end
+            #if($item.qualificationItemRelationship),"qualificationItemRelationship": $item.qualificationItemRelationship#end
+            ,"_debug": "Used fallback method - original toString: $itemStr"
+          }
+        #end#if($foreach.hasNext),#end
+      #end
+    ],
+    "@type": "CheckServiceQualification"
+  }
+#end

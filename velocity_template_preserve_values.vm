@@ -1,0 +1,70 @@
+#set($chars = "abcdefghijklmnopqrstuvwxyz")
+#set($randomString = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($tc.randomAlphaId1 = $randomString)
+#set($randomString = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($tc.randomAlphaId2 = $randomString)
+#set($tc.randomCCMSFCId = $tc.randomAlphaId1 + $math.random(1000, 9999) + $tc.randomAlphaId2)
+
+#set($missingFields = [])
+#if(!$tc.saved.externalId || $tc.saved.externalId.trim() == "") #set($void = $missingFields.add("externalId")) #end
+#if(!$tc.saved.relatedPartyId || $tc.saved.relatedPartyId.trim() == "") #set($void = $missingFields.add("relatedPartyId")) #end
+#if(!$tc.saved.extendedParameters) #set($void = $missingFields.add("extendedParameters")) #end
+#if(!$tc.saved.serviceQualificationItem) #set($void = $missingFields.add("serviceQualificationItem")) #end
+
+#if($missingFields.size() > 0)
+  #set($tc.responseCode = 400)
+  {
+    "id": "$tc.randomCCMSFCId",
+    "href": "https://api.example.com/serviceQualificationManagement/v4/checkServiceQualification/$tc.randomCCMSFCId",
+    "state": "terminatedWithError",
+    "terminationError": {
+      "code": "400",
+      "reason": "Incomplete information provided",
+      "message": "Missing mandatory field(s): $missingFields.toString()"
+    },
+    "effectiveQualificationDate": "2026-05-31T00:00:00Z",
+    "serviceQualificationItem": [],
+    "@type": "CheckServiceQualification"
+  }
+#else
+  #set($tc.responseCode = 200)
+  {
+    "id": "$tc.randomCCMSFCId",
+    "href": "http://localhost:7070/checkServiceQualification/v4/$tc.randomCCMSFCId",
+    "expirationDate": "2027-05-31T00:00:00Z",
+    "qualificationResult": "Feasible",
+    "externalId": "$tc.saved.externalId",
+    "relatedParty": [
+      {
+        "id": "$tc.saved.relatedPartyId",
+        "href": "http://serverlocation:port/partyManagement/v4/party/$tc.saved.relatedPartyId",
+        "role": "Customer",
+        "@type": "RelatedParty",
+        "@referredType": "Customer"
+      }
+    ],
+    "extendedParameters": $tc.saved.extendedParameters,
+    "serviceQualificationItem": [
+      #foreach($item in $tc.saved.serviceQualificationItem)
+        #set($originalItem = $tool.json.stringify($item))
+        #set($itemMap = $tool.json.toMap($originalItem))
+        #set($void = $itemMap.put("id", "CCMS_SQI_ID_$foreach.index"))
+        #set($void = $itemMap.put("qualificationResult", "Feasible"))
+        $tool.json.stringify($itemMap)#if($foreach.hasNext),#end
+      #end
+    ],
+    "@type": "CheckServiceQualification"
+  }
+#end

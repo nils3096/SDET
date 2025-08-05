@@ -51,11 +51,13 @@
   #set($serviceQualificationItems = "")
   #set($hasNotFeasibleItem = false)
   #set($hasNotReasibleItem = false)
+  #set($hasReasibleItem = false)
   #foreach($item in $tc.saved.serviceQualificationItem)
     #set($itemStr = $item.toString())
     #set($currentItem = "")
     #set($isNotFeasible = false)
     #set($isNotReasible = false)
+    #set($isReasible = false)
     #if($itemStr.contains("Geographical Area (Generic)") && $itemStr.contains("Turkey"))
       #set($isNotFeasible = true)
     ## Check for /opt/telorb with Custom geographical area  
@@ -64,6 +66,9 @@
     ## Check for Vietnam with Generic geographical area
     #elseif($itemStr.contains("Geographical Area (Generic)") && $itemStr.contains("Vietnam"))
       #set($isNotReasible = true)
+    ## Add condition for Reasible - you can customize this condition as needed
+    #elseif($itemStr.contains("Reasible") || $itemStr.contains("reasible"))
+      #set($isReasible = true)
     #end
     #set($qualificationResult = "Feasible")
     #if($isNotFeasible)
@@ -72,6 +77,9 @@
     #elseif($isNotReasible)
       #set($qualificationResult = "Not Reasible")
       #set($hasNotReasibleItem = true)
+    #elseif($isReasible)
+      #set($qualificationResult = "Reasible")
+      #set($hasReasibleItem = true)
     #end
     #if($item.keySet && $item.keySet())
       #set($currentItem = '{')
@@ -133,6 +141,8 @@
     #set($rootQualificationResult = "Not Feasible")
   #elseif($hasNotReasibleItem)
     #set($rootQualificationResult = "Not Reasible")
+  #elseif($hasReasibleItem)
+    #set($rootQualificationResult = "Reasible")
   #end
   #set($serviceQualificationRequest = '{')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"id": "' + $tc.randomCCMSFCId + '",')

@@ -49,6 +49,7 @@
 #else
   #set($tc.responseCode = 200)
   #set($serviceQualificationItems = "")
+  #set($hasNotFeasibleItem = false)
   #foreach($item in $tc.saved.serviceQualificationItem)
     #set($itemStr = $item.toString())
     #set($currentItem = "")
@@ -66,6 +67,7 @@
     #set($qualificationResult = "Feasible")
     #if($isNotFeasible)
       #set($qualificationResult = "Not Feasible")
+      #set($hasNotFeasibleItem = true)
     #end
     
     #if($item.keySet && $item.keySet())
@@ -123,11 +125,15 @@
       #set($serviceQualificationItems = "${serviceQualificationItems}${currentItem}")
     #end
   #end
+  #set($rootQualificationResult = "Feasible")
+  #if($hasNotFeasibleItem)
+    #set($rootQualificationResult = "Not Feasible")
+  #end
   #set($serviceQualificationRequest = '{')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"id": "' + $tc.randomCCMSFCId + '",')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"href": "http://localhost:7070/checkServiceQualification/v4/' + $tc.randomCCMSFCId + '",')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"expirationDate": "2027-05-31T00:00:00Z",')
-  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"qualificationResult": "Feasible",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"qualificationResult": "' + $rootQualificationResult + '",')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"externalId": "' + $tc.saved.externalId + '",')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"relatedParty": [')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '{')

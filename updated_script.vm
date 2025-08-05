@@ -54,6 +54,7 @@
     #set($itemStr = $item.toString())
     #set($currentItem = "")
     #set($isNotFeasible = false)
+    #set($isVietnam = false)
     
     ## Check for geographical area conditions that make it not feasible
     ## More comprehensive string matching for Turkey condition
@@ -62,12 +63,17 @@
     ## Check for /opt/telorb with Custom geographical area  
     #elseif($itemStr.contains("Geographical Area (Custom)") && $itemStr.contains("/opt/telorb"))
       #set($isNotFeasible = true)
+    ## Check for Vietnam with Generic geographical area
+    #elseif($itemStr.contains("Geographical Area (Generic)") && $itemStr.contains("Vietnam"))
+      #set($isVietnam = true)
     #end
     
     #set($qualificationResult = "Feasible")
     #if($isNotFeasible)
       #set($qualificationResult = "Not Feasible")
       #set($hasNotFeasibleItem = true)
+    #elseif($isVietnam)
+      #set($qualificationResult = "Reasible")
     #end
     
     #if($item.keySet && $item.keySet())

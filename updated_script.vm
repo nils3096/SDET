@@ -50,6 +50,7 @@
   #set($tc.responseCode = 200)
   #set($serviceQualificationItems = "")
   #set($hasNotFeasibleItem = false)
+  #set($hasReasibleItem = false)
   #foreach($item in $tc.saved.serviceQualificationItem)
     #set($itemStr = $item.toString())
     #set($currentItem = "")
@@ -74,6 +75,7 @@
       #set($hasNotFeasibleItem = true)
     #elseif($isVietnam)
       #set($qualificationResult = "Reasible")
+      #set($hasReasibleItem = true)
     #end
     
     #if($item.keySet && $item.keySet())
@@ -134,6 +136,8 @@
   #set($rootQualificationResult = "Feasible")
   #if($hasNotFeasibleItem)
     #set($rootQualificationResult = "Not Feasible")
+  #elseif($hasReasibleItem)
+    #set($rootQualificationResult = "Reasible")
   #end
   #set($serviceQualificationRequest = '{')
   #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"id": "' + $tc.randomCCMSFCId + '",')

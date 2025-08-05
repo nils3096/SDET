@@ -1,0 +1,163 @@
+#set($tc.randomId = $math.random(1000, 9999))
+#set($tc.randomId1 = $math.random(1000, 9999))
+#set($chars = "abcdefghijklmnopqrstuvwxyz")
+#set($randomString = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString = "${randomString}${randomChar}")
+#end
+#set($randomString1 = "")
+#set($randomChar = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString1 = "${randomString1}${randomChar}")
+#end
+#set($tc.randomAlphaId1 = $randomString)
+#set($randomString2 = "")
+#foreach($i in [1..4])
+  #set($index = $math.random(0, 25))
+  #set($nextIndex = $index + 1)
+  #set($randomChar = $chars.substring($index, $nextIndex))
+  #set($randomString2 = "${randomString2}${randomChar}")
+#end
+#set($tc.randomAlphaId2 = $randomString2)
+#set($tc.randomCCMSFCId = $tc.randomAlphaId1 + "-" + $math.random(1000, 9999) + "-" + $tc.randomAlphaId2)
+#set($missingFields = [])
+#if(!$tc.saved.externalId || $tc.saved.externalId.trim() == "") #set($void = $missingFields.add("externalId")) #end
+#if(!$tc.saved.relatedPartyId || $tc.saved.relatedPartyId.trim() == "") #set($void = $missingFields.add("relatedPartyId")) #end
+#if(!$tc.saved.extendedParameters) #set($void = $missingFields.add("extendedParameters")) #end
+#if(!$tc.saved.serviceQualificationItem) #set($void = $missingFields.add("serviceQualificationItem")) #end
+#if($missingFields.size() > 0)
+  #set($tc.responseCode = 400)
+  {
+    "id": "$tc.randomCCMSFCId",
+    "href": "https://api.example.com/serviceQualificationManagement/v4/checkServiceQualification/$tc.randomCCMSFCId",
+    "state": "terminatedWithError",
+    "terminationError": {
+      "code": "400",
+      "reason": "Incomplete information provided",
+      "message": "Missing mandatory field(s): $missingFields.toString()"
+    },
+    "effectiveQualificationDate": "2026-05-31T00:00:00Z",
+    "serviceQualificationItem": [],
+    "@type": "CheckServiceQualification"
+  }
+#else
+  #set($tc.responseCode = 200)
+  #set($serviceQualificationItems = "")
+  #set($hasNotFeasibleItem = false)
+  #set($hasNotReasibleItem = false)
+  #foreach($item in $tc.saved.serviceQualificationItem)
+    #set($itemStr = $item.toString())
+    #set($currentItem = "")
+    #set($isNotFeasible = false)
+    #set($isNotReasible = false)
+    #if($itemStr.contains("Geographical Area (Generic)") && $itemStr.contains("Turkey"))
+      #set($isNotFeasible = true)
+    ## Check for /opt/telorb with Custom geographical area  
+    #elseif($itemStr.contains("Geographical Area (Custom)") && $itemStr.contains("/opt/telorb"))
+      #set($isNotFeasible = true)
+    ## Check for Vietnam with Generic geographical area
+    #elseif($itemStr.contains("Geographical Area (Generic)") && $itemStr.contains("Vietnam"))
+      #set($isNotReasible = true)
+    #end
+    #set($qualificationResult = "Feasible")
+    #if($isNotFeasible)
+      #set($qualificationResult = "Not Feasible")
+      #set($hasNotFeasibleItem = true)
+    #elseif($isNotReasible)
+      #set($qualificationResult = "Not Reasible")
+      #set($hasNotReasibleItem = true)
+    #end
+    #if($item.keySet && $item.keySet())
+      #set($currentItem = '{')
+      #set($currentItem = "${currentItem}" + '"id": "' + $tc.randomId + '-' + $tc.randomAlphaId1 + '-' + $tc.randomId1 + '-' + $tc.randomAlphaId2 + $foreach.index + '",')
+      #set($currentItem = "${currentItem}" + '"qualificationResult": "' + $qualificationResult + '"')
+      #foreach($key in $item.keySet())
+        #set($value = $item.get($key))
+        #if($value && $value.toString().trim() != "")
+          #set($currentItem = "${currentItem}" + ',"' + $key + '": ')
+          #if($value.toString().startsWith("{") || $value.toString().startsWith("["))
+            #set($currentItem = "${currentItem}" + $value)
+          #else
+            #set($currentItem = "${currentItem}" + '"' + $value + '"')
+          #end
+        #end
+      #end
+      #set($currentItem = "${currentItem}" + '}')
+    #elseif($item.entrySet && $item.entrySet())
+      #set($currentItem = '{')
+      #set($currentItem = "${currentItem}" + '"id": "' + $tc.randomId + '-' + $tc.randomAlphaId1 + '-' + $tc.randomId1 + '-' + $tc.randomAlphaId2 + $foreach.index + '",')
+      #set($currentItem = "${currentItem}" + '"qualificationResult": "' + $qualificationResult + '"')
+      #foreach($entry in $item.entrySet())
+        #set($value = $entry.value)
+        #if($value && $value.toString().trim() != "")
+          #set($currentItem = "${currentItem}" + ',"' + $entry.key + '": ')
+          #if($value.toString().startsWith("{") || $value.toString().startsWith("["))
+            #set($currentItem = "${currentItem}" + $value)
+          #else
+            #set($currentItem = "${currentItem}" + '"' + $value + '"')
+          #end
+        #end
+      #end
+      #set($currentItem = "${currentItem}" + '}')
+    #elseif($itemStr.startsWith("{") && $itemStr.endsWith("}"))
+      #set($itemLength = $itemStr.length())
+      #set($endIndex = $itemLength - 1)
+      #set($originalJson = $itemStr.substring(1, $endIndex))
+      #set($extraChars = '{"name": "Committed Capacity","valueType": "Committed Capacity","mandatory": true,"value": "Capacity Tiers [1..4] - (Capacity (%), Availability (%))"}, {"name": "Performance Objectives","valueType": "Performance Objectives","mandatory": true,"value": "Service Availability (%) Per Performance Tier / Per CoS: (Frame Delay, Inter-Frame Delay Variation, Frame Loss)"}')
+      #set($searchPattern = '"serviceCharacteristic": [{"')
+      #set($replacementPattern = '"serviceCharacteristic": [' + $extraChars + ',{"')
+      #set($patchedJson = $originalJson.replace($searchPattern, $replacementPattern))
+      #set($searchPattern2 = '"serviceCharacteristic":[{"')
+      #set($replacementPattern2 = '"serviceCharacteristic":[' + $extraChars + ',{"')
+      #set($patchedJson = $patchedJson.replace($searchPattern2, $replacementPattern2))
+      #set($currentItem = '{"id": "' + $tc.randomId + '-' + $tc.randomAlphaId1 + '-' + $tc.randomId1 + '-' + $tc.randomAlphaId2 + $foreach.index + '","qualificationResult": "' + $qualificationResult + '",' + $patchedJson + '}')
+    #elseif($itemStr.contains("="))
+      #set($currentItem = '{"id": "' + $tc.randomId + '-' + $tc.randomAlphaId1 + '-' + $tc.randomId1 + '-' + $tc.randomAlphaId2 + $foreach.index + '","qualificationResult": "' + $qualificationResult + '","_originalData": "' + $itemStr + '"}')
+    #else
+      #set($currentItem = '{"id": "' + $tc.randomId + '-' + $tc.randomAlphaId1 + '-' + $tc.randomId1 + '-' + $tc.randomAlphaId2 + $foreach.index + '","qualificationResult": "' + $qualificationResult + '","_debug": "Could not parse item: ' + $itemStr + '"}')
+    #end
+    #if($foreach.hasNext)
+      #set($serviceQualificationItems = "${serviceQualificationItems}${currentItem},")
+    #else
+      #set($serviceQualificationItems = "${serviceQualificationItems}${currentItem}")
+    #end
+  #end
+  #set($rootQualificationResult = "Feasible")
+  #if($hasNotFeasibleItem)
+    #set($rootQualificationResult = "Not Feasible")
+  #elseif($hasNotReasibleItem)
+    #set($rootQualificationResult = "Not Reasible")
+  #end
+  #set($serviceQualificationRequest = '{')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"id": "' + $tc.randomCCMSFCId + '",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"href": "http://localhost:7070/checkServiceQualification/v4/' + $tc.randomCCMSFCId + '",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"expirationDate": "2027-05-31T00:00:00Z",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"qualificationResult": "' + $rootQualificationResult + '",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"externalId": "' + $tc.saved.externalId + '",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"relatedParty": [')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '{')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"id": "' + $tc.saved.relatedPartyId + '",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"href": "http://serverlocation:port/partyManagement/v4/party/' + $tc.saved.relatedPartyId + '",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"role": "Customer",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"@type": "RelatedParty",')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"@referredType": "Customer"')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '}],')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"extendedParameters": ')
+  #if($tc.saved.extendedParameters.size() > 0 && $tc.saved.extendedParameters.get(0).startsWith("{"))
+    #set($serviceQualificationRequest = "${serviceQualificationRequest}" + $tc.saved.extendedParameters.get(0))
+  #else
+    #set($serviceQualificationRequest = "${serviceQualificationRequest}" + $tc.saved.extendedParameters)
+  #end
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + ',')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"serviceQualificationItem": [' + $serviceQualificationItems + '],')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '"@type": "CheckServiceQualification"')
+  #set($serviceQualificationRequest = "${serviceQualificationRequest}" + '}')
+  #set($tc.saved.serviceQualificationRequest = "${serviceQualificationRequest}")
+  $serviceQualificationRequest
+#end

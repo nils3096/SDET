@@ -55,11 +55,11 @@
     #set($isNotFeasible = false)
     
     ## Check for geographical area conditions that make it not feasible
-    ## Check for Turkey with Generic geographical area
-    #if(($itemStr.contains('"name":"Geographical Area (Generic)"') || $itemStr.contains('"name": "Geographical Area (Generic)"')) && ($itemStr.contains('"value":"Turkey"') || $itemStr.contains('"value": "Turkey"')))
+    ## More comprehensive string matching for Turkey condition
+    #if($itemStr.contains("Geographical Area (Generic)") && $itemStr.contains("Turkey"))
       #set($isNotFeasible = true)
     ## Check for /opt/telorb with Custom geographical area  
-    #elseif(($itemStr.contains('"name":"Geographical Area (Custom)"') || $itemStr.contains('"name": "Geographical Area (Custom)"')) && ($itemStr.contains('"value":"/opt/telorb"') || $itemStr.contains('"value": "/opt/telorb"')))
+    #elseif($itemStr.contains("Geographical Area (Custom)") && $itemStr.contains("/opt/telorb"))
       #set($isNotFeasible = true)
     #end
     
